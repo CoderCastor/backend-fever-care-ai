@@ -122,25 +122,48 @@ authRouter.post("/signup/clinician", async (req, res) => {
 });
 
 // Patient Login
+// Patient Login
 authRouter.post("/login/patient", async (req, res) => {
   try {
+    
     const { email, password } = req.body;
 
-    if (!validator.isEmail(email)) {
-      throw new Error("Invalid Email");
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "Email and password are required"
+      });
     }
 
-    // Find user by email and ensure they are a patient
-    const user = await User.findOne({ email: email, role: "patient" });
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid Email"
+      });
+    }
+
+    // ✅ ADD .select('+password') to include password field
+    const user = await User.findOne({ email: email, role: "patient" })
+      .select('+password');
+
+    console.log("User found:", user ? "Yes" : "No");
+    console.log("User password hash:", user?.password ? "Present" : "Missing");
+
     if (!user) {
-      throw new Error("Invalid credentials or not a patient account");
+      return res.status(400).json({
+        success: false,
+        error: "Invalid credentials or not a patient account"
+      });
     }
 
     // Validate password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new Error("Invalid credentials");
+      return res.status(400).json({
+        success: false,
+        error: "Invalid credentials"
+      });
     }
 
     // Generate JWT token with role
@@ -154,9 +177,6 @@ authRouter.post("/login/patient", async (req, res) => {
       { expiresIn: "8h" }
     );
 
-    // Add the token to cookie
-    
-
     res.json({
       success: true,
       message: "Patient login successful",
@@ -165,10 +185,11 @@ authRouter.post("/login/patient", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        token:token
+        token: token
       }
     });
   } catch (err) {
+    console.error("❌ Login error:", err);
     res.status(400).json({ 
       success: false,
       error: err.message 
@@ -181,21 +202,39 @@ authRouter.post("/login/clinician", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!validator.isEmail(email)) {
-      throw new Error("Invalid Email");
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "Email and password are required"
+      });
     }
 
-    // Find user by email and ensure they are a clinician
-    const user = await User.findOne({ email: email, role: "clinician" });
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid Email"
+      });
+    }
+
+    // ✅ ADD .select('+password') here too
+    const user = await User.findOne({ email: email, role: "clinician" })
+      .select('+password');
+
     if (!user) {
-      throw new Error("Invalid credentials or not a clinician account");
+      return res.status(400).json({
+        success: false,
+        error: "Invalid credentials or not a clinician account"
+      });
     }
 
     // Validate password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new Error("Invalid credentials");
+      return res.status(400).json({
+        success: false,
+        error: "Invalid credentials"
+      });
     }
 
     // Generate JWT token with role
@@ -209,9 +248,6 @@ authRouter.post("/login/clinician", async (req, res) => {
       { expiresIn: "8h" }
     );
 
-    // Add the token to cookie
-    
-
     res.json({
       success: true,
       message: "Clinician login successful",
@@ -220,16 +256,18 @@ authRouter.post("/login/clinician", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        token:token
+        token: token
       }
     });
   } catch (err) {
+    console.error("❌ Login error:", err);
     res.status(400).json({ 
       success: false,
       error: err.message 
     });
   }
 });
+
 
 // Logout Route (common for both)
 authRouter.post("/logout", async (req, res) => {
