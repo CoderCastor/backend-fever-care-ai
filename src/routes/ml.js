@@ -132,9 +132,9 @@ router.post("/predict", async (req, res) => {
 
     const mlData = mlResponse.data;
 
-    if (!mlData.success) {
-      throw new Error("ML prediction failed");
-    }
+    if (mlData.status !== 'success') {  // CORRECT
+        throw new Error("ML prediction failed");
+      }
 
     // Get FeFCon recommendation
     const fefcon = getFefconRecommendation(
@@ -193,7 +193,7 @@ router.post("/predict", async (req, res) => {
       red_flags: fefcon.redFlags,
       monitoring_plan: fefcon.monitoring,
       all_probabilities: mlData.all_probabilities,
-      top_3_predictions: mlData.top_3,
+      top_3_predictions: mlData.top_3_predictions,
       input_summary: {
         temperature,
         fever_days: dayOfIllness,

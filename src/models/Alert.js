@@ -5,12 +5,12 @@ const alertSchema = new mongoose.Schema(
     patientId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
     },
 
     alertType: {
       type: String,
-      required: true,
+      required: false,
       enum: [
         "danger_sign",
         "high_fever",

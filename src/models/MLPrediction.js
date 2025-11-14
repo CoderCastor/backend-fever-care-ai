@@ -5,13 +5,13 @@ const mlPredictionSchema = new mongoose.Schema(
     symptomLogId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SymptomLog",
-      required: true,
+      required: false,
     },
 
     episodeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "FeverEpisode",
-      required: true,
+      required: false,
     },
 
     // Probabilities
