@@ -1,0 +1,15 @@
+module.exports = {
+  User: require("./user"),
+  PatientProfile: require("./PatientProfile"),
+  ClinicianProfile: require("./ClinicianProfile"),
+  FeverEpisode: require("./FeverEpisode"),
+  SymptomLog: require("./SymptomLog"),
+  EpisodeHistory: require("./EpisodeHistory"),
+  Temperature: require("./Temperature"),
+  Alert: require("./Alert"),
+  ChatMessage: require("./ChatMessage"),
+  Device: require("./Device"),
+  Medication: require("./Medication"),
+  MedicationLog: require("./MedicationLog"),
+  MLPrediction: require("./MLPrediction"),
+};
