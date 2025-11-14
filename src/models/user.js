@@ -9,7 +9,6 @@ const userSchema = new mongoose.Schema(
       maxLength: 50,
       index: true,
     },
-
     email: {
       type: String,
       required: true,
@@ -20,12 +19,13 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       minLength: 4,
-      // validate(value) {
-      //   if (!validator.isStrongPassword(value)) {
-      //     throw new Error("Enter Strong Password!");
-      //   }
-      // },
     },
+    role: {
+      type: String,
+      enum: ["patient", "clinician"],
+      required: true,
+      default: "patient"
+    }
   },
   { timestamps: true }
 );
