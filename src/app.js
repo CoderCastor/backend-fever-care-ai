@@ -2,13 +2,16 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+require('dotenv').config();
 
 const authRouter = require("./routes/auth");
 const mlRouter = require("./routes/ml");
 const patientRouter = require("./routes/patient");
 const connectDB = require("./config/database");
 const auth = require("./middlewares/auth");
-
+const voiceRouter = require("./routes/voice");
+const geminiRouter = require("./routes/gemini");
+const timelineRouter = require('./routes/timeline');
 // Middlewares
 app.use(cors());
 app.use(express.json());
@@ -19,6 +22,11 @@ app.use("/auth", authRouter);
 app.use("/ml", mlRouter);
 app.use("/", authRouter);
 app.use("/patient", auth, patientRouter);
+app.use("/api/voice", voiceRouter);
+app.use("/gemini", geminiRouter);
+app.use('/timeline', timelineRouter);
+
+
 app.get("/test", (req, res) => {
   res.send("Server is running on PORT 7777");
 });

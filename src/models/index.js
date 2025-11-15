@@ -12,4 +12,9 @@ module.exports = {
   Medication: require("./Medication"),
   MedicationLog: require("./MedicationLog"),
   MLPrediction: require("./MLPrediction"),
+  FamilyHistory: require("./FamilyHistory"),
+  ContactTracing: require("./ContactTracing"),
+  OccupationalInfo: require("./OccupationalInfo"),
+  DiseaseHotspot: require("./DiseaseHotspot"),
+  MedicationHistory: require("./MedicationHistory"),
 };
