@@ -32,7 +32,7 @@ const medicationLogSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
+  
 medicationLogSchema.index({ medicationId: 1, takenAt: -1 });
 medicationLogSchema.index({ patientId: 1, takenAt: -1 });
 

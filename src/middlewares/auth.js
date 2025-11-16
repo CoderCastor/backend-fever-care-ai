@@ -58,12 +58,7 @@ const auth = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: "Account has been deactivated",
-      });
-    }
+    // ✅ REMOVED isActive check since your User model doesn't have it
 
     // Attach user object to request (optional)
     req.user = user;

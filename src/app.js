@@ -7,11 +7,17 @@ require("dotenv").config();
 const authRouter = require("./routes/auth");
 const mlRouter = require("./routes/ml");
 const patientRouter = require("./routes/patient");
+const clinicianRouter = require("./routes/clinician");
 const connectDB = require("./config/database");
 const auth = require("./middlewares/auth");
+
 const voiceRouter = require("./routes/voice");
 const geminiRouter = require("./routes/gemini");
 const timelineRouter = require('./routes/timeline');
+
+const chatbotRoutes = require('./routes/chatbot');
+
+
 // Middlewares
 app.use(cors());
 app.use(cors({
@@ -25,10 +31,15 @@ app.use("/auth", authRouter);
 app.use("/ml", mlRouter);
 app.use("/", authRouter);
 app.use("/patient", auth, patientRouter);
+
 app.use("/api/voice", voiceRouter);
 app.use("/gemini", geminiRouter);
 app.use('/timeline', timelineRouter);
 
+
+
+app.use("/clinician", auth, clinicianRouter);
+app.use('/api/chatbot', chatbotRoutes);
 
 app.get("/test", (req, res) => {
   res.send("Server is running on PORT 7777");

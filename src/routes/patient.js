@@ -16,55 +16,49 @@ const router = express.Router();
 // ===== DASHBOARD =====
 router.get("/dashboard", auth, async (req, res) => {
   try {
-    // Get user
+    // Get user info
     const user = await User.findById(req.userId).select("-password");
 
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-
-    // Get active episode
+    // Check for active episode
     const episode = await FeverEpisode.findOne({
       patientId: req.userId,
       status: "active",
-    }).sort({ startedAt: -1 });
+    });
 
-    if (!episode) {
-      return res.json({
-        success: true,
-        user: {
-          name: user.name,
-          email: user.email,
-        },
-        hasActiveEpisode: false,
+    const hasActiveEpisode = !!episode;
+
+    let symptomLogs = [];
+    let latestPrediction = null;
+    let medications = [];
+    let alerts = [];
+
+    if (episode) {
+      // Get symptom logs
+      symptomLogs = await SymptomLog.find({ episodeId: episode._id }).sort({
+        createdAt: -1,
       });
+
+      // Get latest prediction
+      latestPrediction = await MLPrediction.findOne({
+        episodeId: episode._id,
+      }).sort({ createdAt: -1 });
+
+      // ✅ GET MEDICATIONS FOR THIS PATIENT
+      medications = await Medication.find({
+        patientId: req.userId,
+        isActive: true,
+      })
+        .populate("prescribedBy", "name email")
+        .sort({ createdAt: -1 });
+
+      // Get alerts from clinician
+      alerts = await Alert.find({
+        patientId: req.userId,
+        "metadata.sentBy": "clinician",
+      })
+        .sort({ createdAt: -1 })
+        .limit(10);
     }
-
-    // Get symptom logs for episode
-    const symptomLogs = await SymptomLog.find({
-      episodeId: episode._id,
-    }).sort({ dayOfIllness: 1 });
-
-    // Get latest prediction
-    const latestPrediction = await MLPrediction.findOne({
-      episodeId: episode._id,
-    }).sort({ createdAt: -1 });
-
-    // Get active medications
-    const medications = await Medication.find({
-      patientId: req.userId,
-      isActive: true,
-    }).populate("prescribedBy", "name");
-
-    // Get unread alerts
-    const alerts = await Alert.find({
-      patientId: req.userId,
-      isRead: false,
-    })
-      .sort({ createdAt: -1 })
-      .limit(5);
 
     res.json({
       success: true,
@@ -72,15 +66,19 @@ router.get("/dashboard", auth, async (req, res) => {
         name: user.name,
         email: user.email,
       },
-      hasActiveEpisode: true,
+      hasActiveEpisode,
       episode,
       symptomLogs,
       latestPrediction,
-      medications,
+      medications, // ✅ NOW INCLUDED
       alerts,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Dashboard error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
@@ -460,16 +458,19 @@ router.post("/symptoms/quick", auth, async (req, res) => {
     // Calculate day of illness
     const startDate = new Date(episode.startedAt);
     const currentDate = new Date();
-    
+
     // Reset time parts for accurate day calculation
     startDate.setHours(0, 0, 0, 0);
     currentDate.setHours(0, 0, 0, 0);
-    
-    let dayOfIllness = Math.ceil(
-      (currentDate - startDate) / (1000 * 60 * 60 * 24)
-    ) + 1;
 
-    console.log(`Creating symptom log for Day ${dayOfIllness}, Time: ${tempTime || 'unknown'}`);
+    let dayOfIllness =
+      Math.ceil((currentDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    console.log(
+      `Creating symptom log for Day ${dayOfIllness}, Time: ${
+        tempTime || "unknown"
+      }`
+    );
 
     // Create symptom log
     const symptomLog = await SymptomLog.create({
@@ -495,7 +496,9 @@ router.post("/symptoms/quick", auth, async (req, res) => {
       success: true,
       symptomLog,
       dayOfIllness,
-      message: `Symptoms logged for Day ${dayOfIllness} (${tempTime || 'unknown'})`,
+      message: `Symptoms logged for Day ${dayOfIllness} (${
+        tempTime || "unknown"
+      })`,
     });
   } catch (error) {
     console.error("Quick symptoms error:", error);
@@ -503,6 +506,90 @@ router.post("/symptoms/quick", auth, async (req, res) => {
   }
 });
 
+// ===== GET MY MEDICATIONS =====
+router.get("/medications", auth, async (req, res) => {
+  try {
+    const medications = await Medication.find({
+      patientId: req.userId,
+      isActive: true,
+    })
+      .populate("prescribedBy", "name")
+      .sort({ prescribedDate: -1 });
+
+    res.json({ success: true, medications });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ===== LOG MEDICATION INTAKE =====
+router.post("/medication-log", auth, async (req, res) => {
+  try {
+    const { medicationId, notes } = req.body;
+
+    // Verify medication belongs to patient
+    const medication = await Medication.findOne({
+      _id: medicationId,
+      patientId: req.userId,
+    });
+
+    if (!medication) {
+      return res.status(404).json({
+        success: false,
+        error: "Medication not found",
+      });
+    }
+
+    const log = await MedicationLog.create({
+      medicationId,
+      patientId: req.userId,
+      takenAt: new Date(),
+      notes: notes || null,
+    });
+
+    res.status(201).json({ success: true, log });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ===== GET MEDICATION LOGS =====
+router.get("/medication-logs", auth, async (req, res) => {
+  try {
+    const logs = await MedicationLog.find({ patientId: req.userId })
+      .populate("medicationId", "medicationName dosage")
+      .sort({ takenAt: -1 });
+
+    res.json({ success: true, logs });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ===== GET TODAY'S LOGS FOR A MEDICATION =====
+router.get("/medication-logs/:medicationId/today", auth, async (req, res) => {
+  try {
+    const { medicationId } = req.params;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const logs = await MedicationLog.find({
+      medicationId,
+      patientId: req.userId,
+      takenAt: {
+        $gte: today,
+        $lt: tomorrow,
+      },
+    }).sort({ takenAt: -1 });
+
+    res.json({ success: true, logs });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // POST: Start new episode with medical history
 router.post("/episode/start-with-history", auth, async (req, res) => {
@@ -663,6 +750,76 @@ router.get("/episode/active", auth, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ===== SEND ALERT TO CLINICIAN =====
+router.post("/alert/send", auth, async (req, res) => {
+  try {
+    const { message, severity } = req.body;
+
+    if (!message || !severity) {
+      return res.status(400).json({
+        success: false,
+        error: "Message and severity are required",
+      });
+    }
+
+    const alert = await Alert.create({
+      patientId: req.userId,
+      alertType: "checkup_due",
+      severity,
+      message,
+      isRead: false,
+      actionRequired: severity === "critical" || severity === "high",
+      metadata: {
+        sentBy: "patient",
+        patientId: req.userId,
+        sentAt: new Date(),
+      },
+    });
+
+    res.status(201).json({ success: true, alert });
+  } catch (error) {
+    console.error("Send alert error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ===== GET MY ALERTS =====
+router.get("/alerts", auth, async (req, res) => {
+  try {
+    const alerts = await Alert.find({
+      patientId: req.userId,
+      "metadata.sentBy": "clinician",
+    })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json({ success: true, alerts });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ===== MARK ALERT AS READ =====
+router.put("/alerts/:alertId/read", auth, async (req, res) => {
+  try {
+    const { alertId } = req.params;
+
+    const alert = await Alert.findOneAndUpdate(
+      { _id: alertId, patientId: req.userId },
+      { isRead: true, readAt: new Date() },
+      { new: true }
+    );
+
+    if (!alert) {
+      return res.status(404).json({ success: false, error: "Alert not found" });
+    }
+
+    res.json({ success: true, alert });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

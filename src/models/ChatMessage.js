@@ -1,39 +1,34 @@
 const mongoose = require("mongoose");
 
-const chatMessageSchema = new mongoose.Schema(
-  {
-    patientId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
-    role: {
-      type: String,
-      required: true,
-      enum: ["user", "assistant", "system"],
-    },
-
-    content: {
-      type: String,
-      required: true,
-    },
-
-    language: {
-      type: String,
-      default: "en",
-    },
-
-    modelVersion: String,
-    confidence: Number,
-    sessionId: String,
+const ChatMessageSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
   },
-  {
-    timestamps: true,
-  }
-);
+  role: {
+    type: String,
+    enum: ["user", "assistant", "system"],
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  language: {
+    type: String,
+    enum: ["en", "hi", "kn"],
+    default: "en",
+  },
+  created_at: {
+    type: Date,
+    default: Date.now,
+    index: true,
+  },
+});
 
-chatMessageSchema.index({ patientId: 1, createdAt: -1 });
-chatMessageSchema.index({ sessionId: 1 });
+// Index for faster queries
+ChatMessageSchema.index({ userId: 1, created_at: -1 });
 
-module.exports = mongoose.model("ChatMessage", chatMessageSchema);
+module.exports = mongoose.model("ChatMessage", ChatMessageSchema);
