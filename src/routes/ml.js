@@ -115,7 +115,7 @@ router.post("/predict", async (req, res) => {
     }
 
     // Call Flask ML API
-    const mlResponse = await axios.post("http://localhost:6000/predict", {
+    const mlResponse = await axios.post("https://backend-fever-care-ai.onrender.com/predict", {
       temperature,
       fever_days: dayOfIllness,
       headache,
