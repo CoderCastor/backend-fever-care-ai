@@ -41,7 +41,7 @@ const mlPredictionSchema = new mongoose.Schema({
   primaryDiagnosis: {
     type: String,
     required: true,
-    enum: ['Dengue', 'Malaria', 'Typhoid', 'Viral', 'Other'],  // ✅ Capitalize to match Flask
+    enum: ['dengue', 'malaria', 'typhoid', 'viral', 'other'],  // ✅ Capitalize to match Flask
     lowercase: false  // ✅ Don't force lowercase
   },
   confidenceScore: {
