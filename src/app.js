@@ -12,8 +12,12 @@ const auth = require("./middlewares/auth");
 const voiceRouter = require("./routes/voice");
 const geminiRouter = require("./routes/gemini");
 const timelineRouter = require('./routes/timeline');
+const aiRouter = require('./routes/ai');
 // Middlewares
 app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:8080'
+}));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -26,6 +30,7 @@ app.use("/api/voice", voiceRouter);
 app.use("/gemini", geminiRouter);
 app.use('/timeline', timelineRouter);
 
+app.use('/ai', aiRouter);
 
 app.get("/test", (req, res) => {
   res.send("Server is running on PORT 7777");
