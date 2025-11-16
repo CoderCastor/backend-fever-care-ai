@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-require('dotenv').config();
+require("dotenv").config();
 
 const authRouter = require("./routes/auth");
 const mlRouter = require("./routes/ml");
@@ -12,7 +12,6 @@ const auth = require("./middlewares/auth");
 const voiceRouter = require("./routes/voice");
 const geminiRouter = require("./routes/gemini");
 const timelineRouter = require('./routes/timeline');
-const aiRouter = require('./routes/ai');
 // Middlewares
 app.use(cors());
 app.use(cors({
@@ -30,7 +29,6 @@ app.use("/api/voice", voiceRouter);
 app.use("/gemini", geminiRouter);
 app.use('/timeline', timelineRouter);
 
-app.use('/ai', aiRouter);
 
 app.get("/test", (req, res) => {
   res.send("Server is running on PORT 7777");
